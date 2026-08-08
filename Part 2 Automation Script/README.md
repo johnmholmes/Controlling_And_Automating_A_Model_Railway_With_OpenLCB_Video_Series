@@ -18,5 +18,8 @@ This is a big improvement on the original back and forth version I showed in Par
 
 ---
 
+Also the Infrared sensor connection diagram is included in the folder.
+
+
 
 
