@@ -1,6 +1,6 @@
-# This is the script 
+## The script 
 
-# 
+This is the Jython script that could be seen working in the second video.
 
-# that you seen for controlling the loco and the signals
+
 
