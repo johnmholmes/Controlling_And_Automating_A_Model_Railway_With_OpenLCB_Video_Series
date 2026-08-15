@@ -5,13 +5,18 @@ class LCCTest(jmri.jmrit.automat.AbstractAutomaton):
     def init(self):
         print("LCCTest: init()")
 
+        # --- Speeds (easy to adjust) ---
+        self.speedSlow   = 0.4
+        self.speedMedium = 0.5
+        self.speedFast   = 0.8
+
         # --- Layout sensors (cached once) ---
         self.S402 = sensors.provideSensor("S402")   # reverse end
         self.S403 = sensors.provideSensor("S403")   # intermediate
         self.S404 = sensors.provideSensor("S404")   # intermediate
         self.S407 = sensors.provideSensor("S407")   # forward end
 
-        # --- Signal / aspect sensors (also cached) ---
+        # --- Signal / aspect sensors ---
         self.SH1R = sensors.provideSensor("SH1R")
         self.SH1G = sensors.provideSensor("SH1G")
         self.SH6R = sensors.provideSensor("SH6R")
@@ -23,7 +28,6 @@ class LCCTest(jmri.jmrit.automat.AbstractAutomaton):
             print("ERROR: Could not acquire throttle for address 4")
             return
 
-        # Optional: give the automaton a nice name in the thread monitor
         self.setName("LCCTest - Jinty shuttle")
 
     def handle(self):
@@ -37,15 +41,15 @@ class LCCTest(jmri.jmrit.automat.AbstractAutomaton):
 
         # Direction + speed
         self.throttle.setIsForward(True)
-        self.waitMsec(800)                      # allow direction to settle
-        self.throttle.setSpeedSetting(0.5)
+        self.waitMsec(800)
+        self.throttle.setSpeedSetting(self.speedMedium)
 
         # Speed profile on the way
         self.waitSensorActive(self.S403)
-        self.throttle.setSpeedSetting(0.8)
+        self.throttle.setSpeedSetting(self.speedFast)
 
         self.waitSensorActive(self.S404)
-        self.throttle.setSpeedSetting(0.5)
+        self.throttle.setSpeedSetting(self.speedMedium)
 
         # Approach signal change
         self.SH1G.setKnownState(INACTIVE)
@@ -65,7 +69,7 @@ class LCCTest(jmri.jmrit.automat.AbstractAutomaton):
 
         self.throttle.setIsForward(False)
         self.waitMsec(800)
-        self.throttle.setSpeedSetting(0.4)
+        self.throttle.setSpeedSetting(self.speedSlow)
 
         self.waitSensorActive(self.S403)
 
@@ -75,15 +79,14 @@ class LCCTest(jmri.jmrit.automat.AbstractAutomaton):
 
         # Stop at near end
         self.waitSensorActive(self.S402)
-        self.waitMsec(300)                      # short coast
+        self.waitMsec(300)
         self.throttle.setSpeedSetting(0.0)
         print("Stopped at S402 – waiting for inertia")
         self.waitMsec(8000)
 
         print("=== End of loop – repeating ===")
-        return True                             # keep running
+        return True
 
-# ------------------------------------------------------------------
 # Create and start
 a = LCCTest()
 a.start()
