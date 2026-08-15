@@ -2,4 +2,4 @@
 
 I have included the Anyrail file as well as the Jpeg picture file.
 
-The Script will also appear in the folder in tomorrow 16 August.
+The Script will also appear in the folder tomorrow 16 August.
