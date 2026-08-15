@@ -1,10 +1,3 @@
-## The script 
-
-This is the Jython script that was seen working in the second video.
-
-This is a big improvement on the original back and forth version I showed in Part 1.
-
-## Improvements over the original script
 
 | Area | Original | Improved version |
 |------|----------|------------------|
@@ -18,7 +11,51 @@ This is a big improvement on the original back and forth version I showed in Par
 
 ---
 
-Also the Infrared sensor connection diagram is included in the folder.
+## Key features
+
+- **Four configurable speeds**
+  ```python
+  self.speedStop   = 0.0
+  self.speedSlow   = 0.4
+  self.speedMedium = 0.5
+  self.speedFast   = 0.8
+  ```
+- Cached sensors for both layout detection and signal aspects
+- Clean forward / reverse cycle with intermediate speed changes
+- Signal aspect control (red/green style sensors)
+- Inertia wait after stopping at each end
+- Easy to extend (add more sensors, turnouts, functions, etc.)
+
+---
+
+## Requirements
+
+- JMRI (PanelPro or equivalent)
+- A locomotive decoder that responds to the configured address
+- The following sensors defined in the Sensor Table:
+  - Layout: `S402`, `S403`, `S404`, `S407`
+  - Signals: `SH1R`, `SH1G`, `SH6R`, `SH6G`
+
+---
+
+## How to use
+
+1. Copy the script into a `.py` file (e.g. `LCCTest.py`).
+2. Adjust the speed values and sensor names in `init()` if needed.
+3. In JMRI: **Scripting → Run Script…** and select the file  
+   **or** add it as a start-up action.
+4. The script will loop indefinitely.  
+   Stop it via the Thread Monitor or by terminating JMRI (the throttle is released on JMRI shutdown).
+
+---
+
+## Customisation tips
+
+- Change locomotive address:
+  ```python
+  self.throttle = self.getThrottle(4, False)   # short address
+  # self.throttle = self.getThrottle(1234, True)  # long address
+  ```
 
 
 
