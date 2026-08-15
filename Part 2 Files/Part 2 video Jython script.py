@@ -1,97 +1,89 @@
-import jarray
 import jmri
 
-class LCCTest(jmri.jmrit.automat.AbstractAutomaton) :
+class LCCTest(jmri.jmrit.automat.AbstractAutomaton):
 
     def init(self):
-        # init() is called exactly once at the beginning to do
-        # any necessary configuration.
-        print "Inside init(self)"
+        print("LCCTest: init()")
 
-        # set up sensor numbers
-        # fwdSensor is reached when loco is running forward
-        self.S402 = sensors.provideSensor("S402")
-        self.S403  = sensors.provideSensor("S403")
-        self.S404 = sensors.provideSensor("S404")
-        self.S407  = sensors.provideSensor("S407")
+        # --- Layout sensors (cached once) ---
+        self.S402 = sensors.provideSensor("S402")   # reverse end
+        self.S403 = sensors.provideSensor("S403")   # intermediate
+        self.S404 = sensors.provideSensor("S404")   # intermediate
+        self.S407 = sensors.provideSensor("S407")   # forward end
 
-        # get loco address. For long address change "False" to "True"
-        self.throttle = self.getThrottle(4, False)  # Jinty
+        # --- Signal / aspect sensors (also cached) ---
+        self.SH1R = sensors.provideSensor("SH1R")
+        self.SH1G = sensors.provideSensor("SH1G")
+        self.SH6R = sensors.provideSensor("SH6R")
+        self.SH6G = sensors.provideSensor("SH6G")
 
-        return
+        # --- Throttle ---
+        self.throttle = self.getThrottle(4, False)  # short address 4 = Jinty
+        if self.throttle is None:
+            print("ERROR: Could not acquire throttle for address 4")
+            return
+
+        # Optional: give the automaton a nice name in the thread monitor
+        self.setName("LCCTest - Jinty shuttle")
 
     def handle(self):
-        # handle() is called repeatedly until it returns false.
-        print "Inside handle(self)"
-        sensors.provideSensor("SH1R").setState(INACTIVE)
-        sensors.provideSensor("SH6R").setState(ACTIVE)
-        
-        self.waitMsec(500)
-        sensors.provideSensor("SH1G").setState(ACTIVE)
+        print("=== Starting forward run ===")
 
-        # set loco to forward
-        print "Set Loco Forward"
+        # Set signals for forward
+        self.SH1R.setKnownState(INACTIVE)
+        self.SH6R.setKnownState(ACTIVE)
+        self.waitMsec(300)
+        self.SH1G.setKnownState(ACTIVE)
+
+        # Direction + speed
         self.throttle.setIsForward(True)
-
-        # wait 1 second for layout to catch up, then set speed
-        self.waitMsec(1000)
-        print "Set Speed"
+        self.waitMsec(800)                      # allow direction to settle
         self.throttle.setSpeedSetting(0.5)
-        
-        #speed up
+
+        # Speed profile on the way
         self.waitSensorActive(self.S403)
         self.throttle.setSpeedSetting(0.8)
-        
+
         self.waitSensorActive(self.S404)
         self.throttle.setSpeedSetting(0.5)
-        
-        sensors.provideSensor("SH1G").setState(INACTIVE)
-        sensors.provideSensor("SH1R").setState(ACTIVE)
 
-        # wait for sensor in forward direction to trigger, then stop
-        print "Wait for Forward Sensor"
+        # Approach signal change
+        self.SH1G.setKnownState(INACTIVE)
+        self.SH1R.setKnownState(ACTIVE)
+
+        # Stop at far end
         self.waitSensorActive(self.S407)
-        print "Set Speed Stop"
-        self.throttle.setSpeedSetting(0)
+        self.throttle.setSpeedSetting(0.0)
+        print("Stopped at S407 – waiting for inertia")
+        self.waitMsec(8000)
 
-        # delay for a time (remember loco could still be moving
-        # due to simulated or actual inertia). Time is in milliseconds
-        print "wait 8 seconds"
-        self.waitMsec(8000)          # wait for 8 seconds
-        
-        sensors.provideSensor("SH6R").setState(INACTIVE)
-        sensors.provideSensor("SH6G").setState(ACTIVE)
+        # ---------- Reverse run ----------
+        print("=== Starting reverse run ===")
 
-        print "Set Loco Reverse"
+        self.SH6R.setKnownState(INACTIVE)
+        self.SH6G.setKnownState(ACTIVE)
+
         self.throttle.setIsForward(False)
-        self.waitMsec(1000)                 # wait 1 second for Xpressnet to catch up
-        print "Set Speed"
+        self.waitMsec(800)
         self.throttle.setSpeedSetting(0.4)
+
         self.waitSensorActive(self.S403)
-        
-        sensors.provideSensor("SH6G").setState(INACTIVE)
-        sensors.provideSensor("SH6R").setState(ACTIVE)
-        
 
-        # wait for sensor in reverse direction to trigger
-        print "Wait for Reverse Sensor"
+        # Signal change while moving
+        self.SH6G.setKnownState(INACTIVE)
+        self.SH6R.setKnownState(ACTIVE)
+
+        # Stop at near end
         self.waitSensorActive(self.S402)
-        print "Set Speed Stop"
-        self.waitMsec(300)
-        self.throttle.setSpeedSetting(0)
+        self.waitMsec(300)                      # short coast
+        self.throttle.setSpeedSetting(0.0)
+        print("Stopped at S402 – waiting for inertia")
+        self.waitMsec(8000)
 
-        # delay for a time (remember loco could still be moving
-        # due to simulated or actual inertia). Time is in milliseconds
-        print "wait 8 seconds"
-        self.waitMsec(8000)          # wait for 20 seconds
+        print("=== End of loop – repeating ===")
+        return True                             # keep running
 
-        # and continue around again
-        print "End of Loop"
-        return 1
-        # (requires JMRI to be terminated to stop - caution
-        # doing so could leave loco running if not careful)
-
-# end of class definition
-
-# start one of these up
-LCCTest().start()
+# ------------------------------------------------------------------
+# Create and start
+a = LCCTest()
+a.start()
